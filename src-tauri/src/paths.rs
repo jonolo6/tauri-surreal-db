@@ -18,11 +18,15 @@ pub fn path_mapper(mut app_path: PathBuf, connection_string: &str) -> String {
     );
 
     format!(
-        "file:{}",
+        "sqlite:{}",
         app_path
             .to_str()
             .expect("Problem creating fully qualified path to Database file!")
     )
+}
+pub fn append(mut app_path: PathBuf, connection_string: &str) -> String {
+    app_path.push(connection_string);
+    String::from(app_path.to_str().expect("Problem generating string"))
 }
 
 #[allow(dead_code)]

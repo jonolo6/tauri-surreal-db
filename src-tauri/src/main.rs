@@ -42,17 +42,18 @@ fn main() {
             create_dir_all(path).expect("problems creating App directory!");
 
             tauri::async_runtime::block_on(async move {
-                let context = ApplicationContext::new().await;
-                let db = "file:surreal.db";
-                let fqdb = paths::path_mapper(paths::app_path(app), db);
-                println!("fqdb: {}", fqdb);
-                // let fqdb = path_homedir(&db);
+                // let db = "file:surreal.db";
+                // let fqdb = paths::path_mapper(paths::app_path(app), db);
 
+                let db = "surreal.db";
+                let fqdb = paths::append(paths::app_path(app), db);
+                let context = ApplicationContext::new(&fqdb).await;
+                println!("fqdb: {}", fqdb);
+
+                // let fqdb = path_homedir(&db);
                 // let pool = db::setup(&fqdb).await.expect("no pool generated!");
-                //
                 // let instance = db::DbInstance(Mutex::new(pool));
                 // let lock = instance.0.lock().await;
-                //
                 // drop(lock);
                 app.manage(context);
 
@@ -60,38 +61,23 @@ fn main() {
             })
         })
         // .manage(context)
+        // .invoke_handler(tauri::generate_handler![db::select, db::move_item_above])
         .run(tauri::generate_context!())
         .expect("error while running tauri application")
 }
 
 struct ApplicationContext {
     // action_dispatchers: HashMap<String, Arc<dyn ActionDispatcher + Sync + Send>>,
-
-    // db: Surreal;
 }
-//
+
 impl ApplicationContext {
-    async fn new() -> Self {
+    async fn new(url: &str) -> Self {
+        println!("Creating db at {}", url);
         // let db = Surreal::new::<SpeeDb>("file://./dbs").await.unwrap();
-        let db = Surreal::new::<SpeeDb>(
-            "/Users/polofsson/Library/Application Support/com.tauri.dev/surreal.db",
-        )
-        .await
-        .unwrap();
-        // let surreal_db = Surreal::new::<File>("surreal.db").await.unwrap();
-        // let surreal_db = connect("testdata/surreal.db").await.unwrap();
-        // surreal_db
-        //     .use_ns("test_ns")
-        //     .use_db("test-db")
-        //     .await
-        //     .unwrap();
+        // "/Users/polofsson/Library/Application Support/com.tauri.dev/surreal.db",
+        let db = Surreal::new::<SpeeDb>(url).await.unwrap();
 
         db.use_ns("test").use_db("test").await.unwrap();
-        // surreal_db
-        //     .use_ns("umlboard_namespace")
-        //     .use_db("umlboard_database")
-        //     .await
-        //     .unwrap();
         // let repository = Box::new(SurrealRepository::new(Box::new(surreal_db), "classifiers"));
         // let service = Arc::new(ClassifierService::new(repository));
         // let mut action_dispatchers: HashMap<String, Arc<dyn ActionDispatcher + Sync + Send>> =
@@ -139,6 +125,17 @@ impl ApplicationContext {
             .await
             .unwrap();
         dbg!(groups);
+
+        // tokio::task::spawn(async move {
+        //     let groups = db
+        //         .query("LIVE SELECT * FROM type::table($table)")
+        //         .bind(("table", "person"))
+        //         .notifications().await
+        //
+        //     while let Ok(v) = db.query().unwrap().notifications().recv().await {
+        //         println!("received: {}", v);
+        //     }
+        // });
         Self {}
     }
 }
